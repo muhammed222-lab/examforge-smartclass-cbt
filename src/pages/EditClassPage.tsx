@@ -1,26 +1,33 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle
 } from '@/components/ui/card';
 import {
-  FormLabel,
+  Form,
+  FormControl,
   FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { getFromCSV, CSVFileType, updateInCSV } from '@/lib/csv-utils';
+import { getFromCSV, CSVFileType, updateCSV, deleteFromCSV } from '@/lib/csv-utils';
 import { toast } from '@/hooks/use-toast';
 
 interface ClassData {
@@ -28,33 +35,35 @@ interface ClassData {
   name: string;
   description: string;
   creatorId: string;
-  duration: string;
-  questionsCount: string;
-  accessKey: string;
-  expiryDate: string | null;
   createdAt: string;
-  updatedAt: string;
-  [key: string]: string | null;
+  [key: string]: string;
 }
+
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Class name must be at least 2 characters.",
+  }),
+  description: z.string().optional(),
+});
 
 const EditClassPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { classId } = useParams<{ classId: string }>();
+  const [classData, setClassData] = useState<ClassData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [duration, setDuration] = useState('60');
-  const [questionsCount, setQuestionsCount] = useState('10');
-  const [accessKey, setAccessKey] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  });
 
   useEffect(() => {
-    if (classId) {
-      fetchClassDetails();
-    }
+    fetchClassDetails();
   }, [classId]);
 
   const fetchClassDetails = async () => {
@@ -76,25 +85,18 @@ const EditClassPage: React.FC = () => {
       if (currentClass.creatorId !== user?.id) {
         toast({
           title: "Access denied",
-          description: "You don't have permission to edit this class",
+          description: "You don't have permission to modify this class",
           variant: "destructive",
         });
         navigate('/dashboard/classes');
         return;
       }
       
-      // Populate form with class data
-      setName(currentClass.name);
-      setDescription(currentClass.description);
-      setDuration(currentClass.duration);
-      setQuestionsCount(currentClass.questionsCount);
-      setAccessKey(currentClass.accessKey);
-      if (currentClass.expiryDate) {
-        // Format date for input element (YYYY-MM-DD)
-        const dateObj = new Date(currentClass.expiryDate);
-        const formattedDate = dateObj.toISOString().split('T')[0];
-        setExpiryDate(formattedDate);
-      }
+      setClassData(currentClass);
+      form.reset({
+        name: currentClass.name,
+        description: currentClass.description,
+      });
     } catch (error) {
       console.error('Error fetching class:', error);
       toast({
@@ -107,33 +109,19 @@ const EditClassPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!name) {
-      toast({
-        title: "Error",
-        description: "Class name is required",
-        variant: "destructive",
-      });
-      return;
-    }
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!classData) return;
     
     setIsSubmitting(true);
     
     try {
       const updatedClass = {
-        id: classId,
-        name,
-        description,
-        duration,
-        questionsCount,
-        accessKey,
-        expiryDate: expiryDate || null,
-        updatedAt: new Date().toISOString()
+        ...classData,
+        name: values.name,
+        description: values.description || "",
       };
       
-      await updateInCSV(updatedClass, CSVFileType.CLASSES);
+      await updateCSV(updatedClass, CSVFileType.CLASSES);
       
       toast({
         title: "Success",
@@ -150,6 +138,32 @@ const EditClassPage: React.FC = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+  
+  const handleDelete = async () => {
+    if (!classData) return;
+    
+    if (!confirm("Are you sure you want to delete this class? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      await deleteFromCSV(classData.id, CSVFileType.CLASSES);
+      
+      toast({
+        title: "Success",
+        description: "Class deleted successfully",
+      });
+      
+      navigate('/dashboard/classes');
+    } catch (error) {
+      console.error('Error deleting class:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete class",
+        variant: "destructive",
+      });
     }
   };
 
@@ -181,139 +195,80 @@ const EditClassPage: React.FC = () => {
           <h1 className="text-3xl font-bold tracking-tight">Edit Class</h1>
         </div>
         
-        <form onSubmit={handleSubmit}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Class Details</CardTitle>
-              <CardDescription>
-                Update the information about your class
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <FormLabel htmlFor="name" className="required">
-                  Class Name
-                </FormLabel>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Introduction to Computer Science"
-                  required
+        <Card>
+          <CardHeader>
+            <CardTitle>Class Details</CardTitle>
+            <CardDescription>
+              Update your class information
+            </CardDescription>
+          </CardHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Class Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter class name" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        This is the name that will be displayed to students.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <FormDescription>
-                  A descriptive name for your class
-                </FormDescription>
-              </div>
-              
-              <div className="space-y-2">
-                <FormLabel htmlFor="description">
-                  Description
-                </FormLabel>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Provide details about this class"
-                  rows={3}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Enter class description" 
+                          className="resize-none" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        A brief description of what this class is about.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <FormLabel htmlFor="duration">
-                    Exam Duration (minutes)
-                  </FormLabel>
-                  <Input
-                    id="duration"
-                    type="number"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    min="1"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <FormLabel htmlFor="questionsCount">
-                    Number of Questions
-                  </FormLabel>
-                  <Input
-                    id="questionsCount"
-                    type="number"
-                    value={questionsCount}
-                    onChange={(e) => setQuestionsCount(e.target.value)}
-                    min="1"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <FormLabel htmlFor="accessKey">
-                    Access Key
-                  </FormLabel>
-                  <Input
-                    id="accessKey"
-                    value={accessKey}
-                    onChange={(e) => setAccessKey(e.target.value)}
-                    required
-                  />
-                  <FormDescription>
-                    Students will use this key to access the exam
-                  </FormDescription>
-                </div>
-                
-                <div className="space-y-2">
-                  <FormLabel htmlFor="expiryDate">
-                    Expiry Date (Optional)
-                  </FormLabel>
-                  <Input
-                    id="expiryDate"
-                    type="date"
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
-                  />
-                  <FormDescription>
-                    Set a date after which the exam will no longer be accessible
-                  </FormDescription>
-                </div>
-              </div>
-              
-              <div>
-                <FormLabel>
-                  Learning Materials (Optional)
-                </FormLabel>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <p className="mt-2 text-sm font-medium">
-                    Drag and drop files or click to upload
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Supported formats: PDF, DOCX, PPTX, JPG, PNG
-                  </p>
-                  <Button variant="outline" className="mt-4" type="button">
-                    Upload Files
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button 
+                  onClick={handleDelete}
+                  type="button"
+                  variant="destructive"
+                >
+                  Delete Class
+                </Button>
+                <div className="space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate(`/dashboard/classes/${classId}`)}
+                    type="button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/dashboard/classes/${classId}`)}
-                type="button"
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Saving..." : "Save Changes"}
-              </Button>
-            </CardFooter>
-          </Card>
-        </form>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
       </div>
     </DashboardLayout>
   );

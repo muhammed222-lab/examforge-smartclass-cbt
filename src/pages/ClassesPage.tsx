@@ -94,14 +94,13 @@ const ClassesPage: React.FC = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search classes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-              // Fix for the TS error - using a React element instead of string
-              startAdornment={<Search className="h-4 w-4 text-muted-foreground" />}
+              className="w-full pl-9"
             />
           </div>
           <Button variant="outline" className="sm:w-auto">
