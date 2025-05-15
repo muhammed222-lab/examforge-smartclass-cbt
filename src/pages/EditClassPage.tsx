@@ -1,18 +1,17 @@
-
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle
-} from '@/components/ui/card';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -21,14 +20,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { getFromCSV, CSVFileType, updateCSV, deleteFromCSV } from '@/lib/csv-utils';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  getFromCSV,
+  CSVFileType,
+  updateInCSV,
+  deleteFromCSV,
+} from "@/lib/csv-utils";
+import { toast } from "@/hooks/use-toast";
 
 interface ClassData {
   id: string;
@@ -70,39 +74,39 @@ const EditClassPage: React.FC = () => {
     try {
       setLoading(true);
       const classes = await getFromCSV<ClassData>(CSVFileType.CLASSES);
-      const currentClass = classes.find(c => c.id === classId);
-      
+      const currentClass = classes.find((c) => c.id === classId);
+
       if (!currentClass) {
         toast({
           title: "Error",
           description: "Class not found",
           variant: "destructive",
         });
-        navigate('/dashboard/classes');
+        navigate("/dashboard/classes");
         return;
       }
-      
+
       if (currentClass.creatorId !== user?.id) {
         toast({
           title: "Access denied",
           description: "You don't have permission to modify this class",
           variant: "destructive",
         });
-        navigate('/dashboard/classes');
+        navigate("/dashboard/classes");
         return;
       }
-      
+
       setClassData(currentClass);
       form.reset({
         name: currentClass.name,
         description: currentClass.description,
       });
     } catch (error) {
-      console.error('Error fetching class:', error);
+      console.error("Error fetching class:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load class details',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load class details",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -111,26 +115,26 @@ const EditClassPage: React.FC = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!classData) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const updatedClass = {
-        ...classData,
+        id: classData.id,
         name: values.name,
         description: values.description || "",
       };
-      
-      await updateCSV(updatedClass, CSVFileType.CLASSES);
-      
+
+      await updateInCSV(classData.id, updatedClass, CSVFileType.CLASSES);
+
       toast({
         title: "Success",
         description: "Class updated successfully",
       });
-      
+
       navigate(`/dashboard/classes/${classId}`);
     } catch (error) {
-      console.error('Error updating class:', error);
+      console.error("Error updating class:", error);
       toast({
         title: "Error",
         description: "Failed to update class",
@@ -140,25 +144,29 @@ const EditClassPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleDelete = async () => {
     if (!classData) return;
-    
-    if (!confirm("Are you sure you want to delete this class? This action cannot be undone.")) {
+
+    if (
+      !confirm(
+        "Are you sure you want to delete this class? This action cannot be undone."
+      )
+    ) {
       return;
     }
-    
+
     try {
       await deleteFromCSV(classData.id, CSVFileType.CLASSES);
-      
+
       toast({
         title: "Success",
         description: "Class deleted successfully",
       });
-      
-      navigate('/dashboard/classes');
+
+      navigate("/dashboard/classes");
     } catch (error) {
-      console.error('Error deleting class:', error);
+      console.error("Error deleting class:", error);
       toast({
         title: "Error",
         description: "Failed to delete class",
@@ -194,13 +202,11 @@ const EditClassPage: React.FC = () => {
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">Edit Class</h1>
         </div>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Class Details</CardTitle>
-            <CardDescription>
-              Update your class information
-            </CardDescription>
+            <CardDescription>Update your class information</CardDescription>
           </CardHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -228,10 +234,10 @@ const EditClassPage: React.FC = () => {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Enter class description" 
-                          className="resize-none" 
-                          {...field} 
+                        <Textarea
+                          placeholder="Enter class description"
+                          className="resize-none"
+                          {...field}
                         />
                       </FormControl>
                       <FormDescription>
@@ -243,7 +249,7 @@ const EditClassPage: React.FC = () => {
                 />
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button 
+                <Button
                   onClick={handleDelete}
                   type="button"
                   variant="destructive"
@@ -258,11 +264,8 @@ const EditClassPage: React.FC = () => {
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </CardFooter>

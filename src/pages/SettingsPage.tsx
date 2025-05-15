@@ -1,10 +1,9 @@
-
-import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -12,50 +11,48 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  FormLabel,
-  FormDescription,
-} from '@/components/ui/form';
-import { Switch } from '@/components/ui/switch';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "@/hooks/use-toast";
 
 const SettingsPage: React.FC = () => {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [emailNotifications, setEmailNotifications] = useState(true);
-  
+
   // Temporary mock functions until they are implemented in AuthContext
-  const updateUserProfile = async (data: { name: string; email: string }) => {
+  const updateUserProfile = async (data: {
+    name: string;
+    email: string;
+  }): Promise<void> => {
     // Simulated API call
     return new Promise<void>((resolve) => {
       setTimeout(() => resolve(), 1000);
     });
   };
-  
-  const updatePassword = async (currentPwd: string, newPwd: string) => {
+
+  const updatePassword = async (
+    currentPwd: string,
+    newPwd: string
+  ): Promise<void> => {
     // Simulated API call
     return new Promise<void>((resolve) => {
       setTimeout(() => resolve(), 1000);
     });
   };
-  
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !email) {
       toast({
         title: "Error",
@@ -64,9 +61,9 @@ const SettingsPage: React.FC = () => {
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await updateUserProfile({ name, email });
       toast({
@@ -83,10 +80,10 @@ const SettingsPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
         title: "Error",
@@ -95,7 +92,7 @@ const SettingsPage: React.FC = () => {
       });
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       toast({
         title: "Error",
@@ -104,7 +101,7 @@ const SettingsPage: React.FC = () => {
       });
       return;
     }
-    
+
     if (newPassword.length < 8) {
       toast({
         title: "Error",
@@ -113,14 +110,14 @@ const SettingsPage: React.FC = () => {
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await updatePassword(currentPassword, newPassword);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
       toast({
         title: "Success",
         description: "Password changed successfully",
@@ -135,7 +132,7 @@ const SettingsPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -145,14 +142,14 @@ const SettingsPage: React.FC = () => {
             Manage your account settings and preferences
           </p>
         </div>
-        
+
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="password">Password</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="profile">
             <Card>
               <CardHeader>
@@ -164,7 +161,7 @@ const SettingsPage: React.FC = () => {
               <form onSubmit={handleProfileUpdate}>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <FormLabel htmlFor="name">Full Name</FormLabel>
+                    <Label htmlFor="name">Full Name</Label>
                     <Input
                       id="name"
                       value={name}
@@ -172,9 +169,9 @@ const SettingsPage: React.FC = () => {
                       placeholder="Your full name"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <FormLabel htmlFor="email">Email</FormLabel>
+                    <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
@@ -183,17 +180,19 @@ const SettingsPage: React.FC = () => {
                       placeholder="your.email@example.com"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <FormLabel>Account Type</FormLabel>
+                    <Label>Account Type</Label>
                     <div className="flex items-center space-x-2 rounded-md border p-4">
                       <div>
                         <p className="font-medium">
-                          {user?.paymentPlan === 'premium' ? 'Premium Plan' : 'Basic Plan'}
+                          {user?.paymentPlan === "premium"
+                            ? "Premium Plan"
+                            : "Basic Plan"}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {user?.paymentPlan === 'premium' 
-                            ? 'Unlimited exams and advanced features' 
+                          {user?.paymentPlan === "premium"
+                            ? "Unlimited exams and advanced features"
                             : `${user?.examsRemaining} exams remaining today`}
                         </p>
                       </div>
@@ -201,17 +200,14 @@ const SettingsPage: React.FC = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>
                 </CardFooter>
               </form>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="password">
             <Card>
               <CardHeader>
@@ -223,7 +219,7 @@ const SettingsPage: React.FC = () => {
               <form onSubmit={handlePasswordChange}>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <FormLabel htmlFor="current-password">Current Password</FormLabel>
+                    <Label htmlFor="current-password">Current Password</Label>
                     <Input
                       id="current-password"
                       type="password"
@@ -232,9 +228,9 @@ const SettingsPage: React.FC = () => {
                       placeholder="Enter current password"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <FormLabel htmlFor="new-password">New Password</FormLabel>
+                    <Label htmlFor="new-password">New Password</Label>
                     <Input
                       id="new-password"
                       type="password"
@@ -242,13 +238,15 @@ const SettingsPage: React.FC = () => {
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
                     />
-                    <FormDescription>
+                    <CardDescription>
                       Password must be at least 8 characters long
-                    </FormDescription>
+                    </CardDescription>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <FormLabel htmlFor="confirm-password">Confirm New Password</FormLabel>
+                    <Label htmlFor="confirm-password">
+                      Confirm New Password
+                    </Label>
                     <Input
                       id="confirm-password"
                       type="password"
@@ -259,17 +257,14 @@ const SettingsPage: React.FC = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Changing Password...' : 'Change Password'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Changing Password..." : "Change Password"}
                   </Button>
                 </CardFooter>
               </form>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="preferences">
             <Card>
               <CardHeader>
@@ -286,12 +281,12 @@ const SettingsPage: React.FC = () => {
                       Toggle between light and dark theme
                     </p>
                   </div>
-                  <Switch 
-                    checked={theme === 'dark'} 
-                    onCheckedChange={toggleTheme} 
+                  <Switch
+                    checked={theme === "dark"}
+                    onCheckedChange={toggleTheme}
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Email Notifications</p>
@@ -299,9 +294,9 @@ const SettingsPage: React.FC = () => {
                       Receive emails about exam completions and results
                     </p>
                   </div>
-                  <Switch 
-                    checked={emailNotifications} 
-                    onCheckedChange={setEmailNotifications} 
+                  <Switch
+                    checked={emailNotifications}
+                    onCheckedChange={setEmailNotifications}
                   />
                 </div>
               </CardContent>

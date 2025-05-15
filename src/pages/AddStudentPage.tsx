@@ -1,33 +1,29 @@
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle
-} from '@/components/ui/card';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  FormLabel,
-  FormDescription,
-} from '@/components/ui/form';
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label"; // Updated import
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { getFromCSV, CSVFileType, appendToCSV } from '@/lib/csv-utils';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/select";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { getFromCSV, CSVFileType, appendToCSV } from "@/lib/csv-utils";
+import { toast } from "@/hooks/use-toast";
 
 interface ClassData {
   id: string;
@@ -42,11 +38,11 @@ const AddStudentPage: React.FC = () => {
   const { classId } = useParams<{ classId: string }>();
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClass, setSelectedClass] = useState(classId || '');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [matricNumber, setMatricNumber] = useState('');
-  const [department, setDepartment] = useState('');
+  const [selectedClass, setSelectedClass] = useState(classId || "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [matricNumber, setMatricNumber] = useState("");
+  const [department, setDepartment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -57,18 +53,20 @@ const AddStudentPage: React.FC = () => {
     try {
       setLoading(true);
       const allClasses = await getFromCSV<ClassData>(CSVFileType.CLASSES);
-      const userClasses = allClasses.filter((c: ClassData) => c.creatorId === user?.id);
+      const userClasses = allClasses.filter(
+        (c: ClassData) => c.creatorId === user?.id
+      );
       setClasses(userClasses);
-      
+
       if (!classId && userClasses.length > 0) {
         setSelectedClass(userClasses[0].id);
       }
     } catch (error) {
-      console.error('Error fetching classes:', error);
+      console.error("Error fetching classes:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load classes',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load classes",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -77,7 +75,7 @@ const AddStudentPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !selectedClass) {
       toast({
         title: "Error",
@@ -86,9 +84,9 @@ const AddStudentPage: React.FC = () => {
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const newStudent = {
         id: uuidv4(),
@@ -97,23 +95,23 @@ const AddStudentPage: React.FC = () => {
         matricNumber,
         department,
         classId: selectedClass,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
-      
+
       await appendToCSV(newStudent, CSVFileType.STUDENTS, selectedClass);
-      
+
       toast({
         title: "Success",
         description: "Student added successfully",
       });
-      
+
       if (classId) {
         navigate(`/dashboard/classes/${classId}`);
       } else {
-        navigate('/dashboard/students');
+        navigate("/dashboard/students");
       }
     } catch (error) {
-      console.error('Error adding student:', error);
+      console.error("Error adding student:", error);
       toast({
         title: "Error",
         description: "Failed to add student",
@@ -129,13 +127,19 @@ const AddStudentPage: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center">
           <Button variant="ghost" asChild className="mr-4">
-            <a href={classId ? `/dashboard/classes/${classId}` : '/dashboard/students'}>
+            <a
+              href={
+                classId
+                  ? `/dashboard/classes/${classId}`
+                  : "/dashboard/students"
+              }
+            >
               <ArrowLeft className="h-4 w-4 mr-2" /> Back
             </a>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">Add Student</h1>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
@@ -146,7 +150,7 @@ const AddStudentPage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <FormLabel htmlFor="name">Full Name *</FormLabel>
+                <Label htmlFor="name">Full Name *</Label>
                 <Input
                   id="name"
                   value={name}
@@ -155,9 +159,9 @@ const AddStudentPage: React.FC = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <FormLabel htmlFor="email">Email</FormLabel>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -166,10 +170,10 @@ const AddStudentPage: React.FC = () => {
                   placeholder="student@example.com"
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <FormLabel htmlFor="matricNumber">Matriculation Number</FormLabel>
+                  <Label htmlFor="matricNumber">Matriculation Number</Label>
                   <Input
                     id="matricNumber"
                     value={matricNumber}
@@ -177,9 +181,9 @@ const AddStudentPage: React.FC = () => {
                     placeholder="e.g., 123456"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <FormLabel htmlFor="department">Department</FormLabel>
+                  <Label htmlFor="department">Department</Label>
                   <Input
                     id="department"
                     value={department}
@@ -188,9 +192,9 @@ const AddStudentPage: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
-                <FormLabel htmlFor="class">Class *</FormLabel>
+                <Label htmlFor="class">Class *</Label>
                 <Select
                   value={selectedClass}
                   onValueChange={setSelectedClass}
@@ -208,25 +212,31 @@ const AddStudentPage: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {classes.length === 0 && !loading && (
-                  <FormDescription className="text-destructive">
+                  <CardDescription className="text-destructive">
                     You need to create a class first before adding students.
-                  </FormDescription>
+                  </CardDescription>
                 )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button
                 variant="outline"
-                onClick={() => navigate(classId ? `/dashboard/classes/${classId}` : '/dashboard/students')}
+                onClick={() =>
+                  navigate(
+                    classId
+                      ? `/dashboard/classes/${classId}`
+                      : "/dashboard/students"
+                  )
+                }
                 type="button"
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isSubmitting || classes.length === 0}
               >
-                {isSubmitting ? 'Adding...' : 'Add Student'}
+                {isSubmitting ? "Adding..." : "Add Student"}
               </Button>
             </CardFooter>
           </Card>

@@ -1,11 +1,10 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
-import { Upload } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
+import { Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -13,31 +12,23 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { appendToCSV, CSVFileType } from '@/lib/csv-utils';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { appendToCSV, CSVFileType } from "@/lib/csv-utils";
+import { toast } from "@/hooks/use-toast";
 
 const CreateClassPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [duration, setDuration] = useState('60');
-  const [questionsCount, setQuestionsCount] = useState('10');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [duration, setDuration] = useState("60");
+  const [questionsCount, setQuestionsCount] = useState("10");
   const [accessKey, setAccessKey] = useState(generateAccessKey());
-  const [expiryDate, setExpiryDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState("");
 
   function generateAccessKey() {
     // Generate a random 6-character alphanumeric string
@@ -46,7 +37,7 @@ const CreateClassPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name) {
       toast({
         title: "Error",
@@ -55,9 +46,9 @@ const CreateClassPage: React.FC = () => {
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const newClass = {
         id: uuidv4(),
@@ -69,19 +60,19 @@ const CreateClassPage: React.FC = () => {
         accessKey,
         expiryDate: expiryDate || null,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
-      
+
       await appendToCSV(newClass, CSVFileType.CLASSES);
-      
+
       toast({
         title: "Success",
         description: "Class created successfully",
       });
-      
+
       navigate(`/dashboard/classes/${newClass.id}`);
     } catch (error) {
-      console.error('Error creating class:', error);
+      console.error("Error creating class:", error);
       toast({
         title: "Error",
         description: "Failed to create class",
@@ -96,12 +87,14 @@ const CreateClassPage: React.FC = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create New Class</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Create New Class
+          </h1>
           <p className="text-muted-foreground mt-1">
             Set up a new class and start creating exams
           </p>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
@@ -112,9 +105,9 @@ const CreateClassPage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <FormLabel htmlFor="name" className="required">
+                <Label htmlFor="name" className="required">
                   Class Name
-                </FormLabel>
+                </Label>
                 <Input
                   id="name"
                   value={name}
@@ -122,15 +115,13 @@ const CreateClassPage: React.FC = () => {
                   placeholder="e.g. Introduction to Computer Science"
                   required
                 />
-                <FormDescription>
+                <CardDescription>
                   A descriptive name for your class
-                </FormDescription>
+                </CardDescription>
               </div>
-              
+
               <div className="space-y-2">
-                <FormLabel htmlFor="description">
-                  Description
-                </FormLabel>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
                   value={description}
@@ -139,12 +130,10 @@ const CreateClassPage: React.FC = () => {
                   rows={3}
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <FormLabel htmlFor="duration">
-                    Exam Duration (minutes)
-                  </FormLabel>
+                  <Label htmlFor="duration">Exam Duration (minutes)</Label>
                   <Input
                     id="duration"
                     type="number"
@@ -154,11 +143,9 @@ const CreateClassPage: React.FC = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <FormLabel htmlFor="questionsCount">
-                    Number of Questions
-                  </FormLabel>
+                  <Label htmlFor="questionsCount">Number of Questions</Label>
                   <Input
                     id="questionsCount"
                     type="number"
@@ -168,42 +155,36 @@ const CreateClassPage: React.FC = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <FormLabel htmlFor="accessKey">
-                    Access Key
-                  </FormLabel>
+                  <Label htmlFor="accessKey">Access Key</Label>
                   <Input
                     id="accessKey"
                     value={accessKey}
                     onChange={(e) => setAccessKey(e.target.value)}
                     required
                   />
-                  <FormDescription>
+                  <CardDescription>
                     Students will use this key to access the exam
-                  </FormDescription>
+                  </CardDescription>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <FormLabel htmlFor="expiryDate">
-                    Expiry Date (Optional)
-                  </FormLabel>
+                  <Label htmlFor="expiryDate">Expiry Date (Optional)</Label>
                   <Input
                     id="expiryDate"
                     type="date"
                     value={expiryDate}
                     onChange={(e) => setExpiryDate(e.target.value)}
                   />
-                  <FormDescription>
+                  <CardDescription>
                     Set a date after which the exam will no longer be accessible
-                  </FormDescription>
+                  </CardDescription>
                 </div>
               </div>
-              
+
               <div>
-                <FormLabel>
-                  Learning Materials (Optional)
-                </FormLabel>
+                <Label>Learning Materials (Optional)</Label>
                 <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center">
                   <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
                   <p className="mt-2 text-sm font-medium">
@@ -221,15 +202,12 @@ const CreateClassPage: React.FC = () => {
             <CardFooter className="flex justify-between">
               <Button
                 variant="outline"
-                onClick={() => navigate('/dashboard/classes')}
+                onClick={() => navigate("/dashboard/classes")}
                 type="button"
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Creating..." : "Create Class"}
               </Button>
             </CardFooter>
