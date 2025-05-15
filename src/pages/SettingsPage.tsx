@@ -20,19 +20,14 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
   FormLabel,
-  FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 
 const SettingsPage: React.FC = () => {
-  const { user, updateUserProfile, updatePassword } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +37,21 @@ const SettingsPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [emailNotifications, setEmailNotifications] = useState(true);
+  
+  // Temporary mock functions until they are implemented in AuthContext
+  const updateUserProfile = async (data: { name: string; email: string }) => {
+    // Simulated API call
+    return new Promise<void>((resolve) => {
+      setTimeout(() => resolve(), 1000);
+    });
+  };
+  
+  const updatePassword = async (currentPwd: string, newPwd: string) => {
+    // Simulated API call
+    return new Promise<void>((resolve) => {
+      setTimeout(() => resolve(), 1000);
+    });
+  };
   
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();

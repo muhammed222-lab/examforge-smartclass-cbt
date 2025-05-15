@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,7 +100,8 @@ const ClassesPage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full"
-              prefix={<Search className="h-4 w-4 text-muted-foreground" />}
+              // Fix for the TS error - using a React element instead of string
+              startAdornment={<Search className="h-4 w-4 text-muted-foreground" />}
             />
           </div>
           <Button variant="outline" className="sm:w-auto">

@@ -21,6 +21,10 @@ import SettingsPage from "./pages/SettingsPage";
 import AdminPage from "./pages/AdminPage";
 import CreateClassPage from "./pages/CreateClassPage";
 import ClassDetailPage from "./pages/ClassDetailPage";
+import AddStudentPage from "./pages/AddStudentPage";
+import AddQuestionPage from "./pages/AddQuestionPage";
+import EditClassPage from "./pages/EditClassPage";
+import UpgradePage from "./pages/UpgradePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,8 +52,13 @@ const App = () => {
                 <Route path="/dashboard/classes" element={<ClassesPage />} />
                 <Route path="/dashboard/classes/create" element={<CreateClassPage />} />
                 <Route path="/dashboard/classes/:classId" element={<ClassDetailPage />} />
+                <Route path="/dashboard/classes/:classId/edit" element={<EditClassPage />} />
+                <Route path="/dashboard/classes/:classId/students/add" element={<AddStudentPage />} />
+                <Route path="/dashboard/classes/:classId/questions/create" element={<AddQuestionPage />} />
                 <Route path="/dashboard/students" element={<StudentsPage />} />
+                <Route path="/dashboard/students/add" element={<AddStudentPage />} />
                 <Route path="/dashboard/results" element={<ResultsPage />} />
+                <Route path="/dashboard/upgrade" element={<UpgradePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 

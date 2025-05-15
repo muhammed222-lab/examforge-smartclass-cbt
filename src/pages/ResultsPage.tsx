@@ -222,7 +222,8 @@ const ResultsPage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full"
-              prefix={<Search className="h-4 w-4 text-muted-foreground" />}
+              // Fix for the TS error - using a React element instead of string
+              startAdornment={<Search className="h-4 w-4 text-muted-foreground" />}
             />
           </div>
           <Button variant="outline" className="sm:w-auto">
