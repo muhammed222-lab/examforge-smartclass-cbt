@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Users, FileText, Plus } from 'lucide-react';
@@ -7,6 +6,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFromCSV, CSVFileType } from '@/lib/csv-utils';
+
+interface ClassData {
+  id: string;
+  name: string;
+  description: string;
+  creatorId: string;
+  createdAt: string;
+  [key: string]: string;
+}
+
+interface StudentData {
+  id: string;
+  name: string;
+  email: string;
+  classId: string;
+  [key: string]: string;
+}
+
+interface QuestionData {
+  id: string;
+  question: string;
+  classId: string;
+  [key: string]: string;
+}
+
+interface ResultData {
+  id: string;
+  studentId: string;
+  classId: string;
+  score: string;
+  [key: string]: string;
+}
 
 interface ClassSummary {
   id: string;
@@ -39,7 +70,7 @@ const Dashboard: React.FC = () => {
       try {
         // Get classes created by this user
         const classes = await getFromCSV(CSVFileType.CLASSES);
-        const userClasses = classes.filter((c: any) => c.creatorId === user?.id);
+        const userClasses = classes.filter((c: ClassData) => c.creatorId === user?.id);
         
         // Get total number of students from all classes
         let totalStudents = 0;
@@ -68,7 +99,7 @@ const Dashboard: React.FC = () => {
         
         // Get results data (completed exams)
         const results = await getFromCSV(CSVFileType.RESULTS);
-        const userResults = results.filter((r: any) => userClasses.some((c: any) => c.id === r.classId));
+        const userResults = results.filter((r: ResultData) => userClasses.some((c: ClassData) => c.id === r.classId));
         
         setStats({
           totalClasses: userClasses.length,

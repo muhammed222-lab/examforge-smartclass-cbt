@@ -1,7 +1,7 @@
 
 import React, { ReactNode, useEffect } from 'react';
 import Navbar from './Navbar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
@@ -18,11 +18,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   adminOnly = false
 }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (requiresAuth && !isAuthenticated) {
+    if (!isLoading && requiresAuth) {
+      if (!isAuthenticated) {
         navigate('/login', { replace: true });
       } else if (adminOnly && user?.role !== 'admin') {
         navigate('/dashboard', { replace: true });
@@ -30,7 +31,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
     }
   }, [isAuthenticated, requiresAuth, adminOnly, user, navigate, isLoading]);
 
-  if (isLoading) {
+  if (isLoading && requiresAuth) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
