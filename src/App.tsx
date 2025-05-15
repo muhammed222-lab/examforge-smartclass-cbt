@@ -14,6 +14,13 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
+import ClassesPage from "./pages/ClassesPage";
+import StudentsPage from "./pages/StudentsPage";
+import ResultsPage from "./pages/ResultsPage";
+import SettingsPage from "./pages/SettingsPage";
+import AdminPage from "./pages/AdminPage";
+import CreateClassPage from "./pages/CreateClassPage";
+import ClassDetailPage from "./pages/ClassDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,8 +36,6 @@ const App = () => {
       <ThemeProvider>
         <AuthProvider>
           <TooltipProvider>
-            <Toaster />
-            <Sonner />
             <BrowserRouter>
               <Routes>
                 {/* Public routes */}
@@ -40,11 +45,20 @@ const App = () => {
                 
                 {/* Protected routes */}
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard/classes" element={<ClassesPage />} />
+                <Route path="/dashboard/classes/create" element={<CreateClassPage />} />
+                <Route path="/dashboard/classes/:classId" element={<ClassDetailPage />} />
+                <Route path="/dashboard/students" element={<StudentsPage />} />
+                <Route path="/dashboard/results" element={<ResultsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/admin" element={<AdminPage />} />
                 
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
+            <Toaster />
+            <Sonner />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>

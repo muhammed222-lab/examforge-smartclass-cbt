@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Users, FileText, Plus } from 'lucide-react';
@@ -69,7 +70,7 @@ const Dashboard: React.FC = () => {
     const fetchDashboardData = async () => {
       try {
         // Get classes created by this user
-        const classes = await getFromCSV(CSVFileType.CLASSES);
+        const classes = await getFromCSV<ClassData>(CSVFileType.CLASSES);
         const userClasses = classes.filter((c: ClassData) => c.creatorId === user?.id);
         
         // Get total number of students from all classes
@@ -78,8 +79,8 @@ const Dashboard: React.FC = () => {
 
         // Process each class to get students and questions
         for (const cls of userClasses) {
-          const students = await getFromCSV(CSVFileType.STUDENTS, cls.id);
-          const questions = await getFromCSV(CSVFileType.QUESTIONS, cls.id);
+          const students = await getFromCSV<StudentData>(CSVFileType.STUDENTS, cls.id);
+          const questions = await getFromCSV<QuestionData>(CSVFileType.QUESTIONS, cls.id);
           
           totalStudents += students.length;
           
@@ -98,7 +99,7 @@ const Dashboard: React.FC = () => {
         recentClasses = recentClasses.slice(0, 5);
         
         // Get results data (completed exams)
-        const results = await getFromCSV(CSVFileType.RESULTS);
+        const results = await getFromCSV<ResultData>(CSVFileType.RESULTS);
         const userResults = results.filter((r: ResultData) => userClasses.some((c: ClassData) => c.id === r.classId));
         
         setStats({
