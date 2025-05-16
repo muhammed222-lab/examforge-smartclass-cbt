@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getFromCSV, CSVFileType } from '@/lib/csv-utils';
+import { getFromCSV, CSVFileType, appendToCSV, updateCSV } from '@/lib/csv-utils';
 import { useToast } from '@/hooks/use-toast';
 
 // User types
@@ -24,6 +24,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (email: string, password: string, name: string) => Promise<void>;
+  updateUserPlan: (plan: 'basic' | 'premium') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -176,6 +177,57 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Add the updateUserPlan function
+  const updateUserPlan = async (plan: 'basic' | 'premium') => {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You need to be logged in to update your plan',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const updatedUser = {
+        ...user,
+        paymentPlan: plan,
+        examsRemaining: plan === 'premium' ? 'unlimited' : 5,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Update the user in CSV
+      await updateCSV(
+        { id: user.id },
+        {
+          paymentPlan: plan,
+          examsRemaining: plan === 'premium' ? 'unlimited' : '5',
+          updatedAt: new Date().toISOString()
+        },
+        CSVFileType.USERS
+      );
+
+      // Update local storage
+      localStorage.setItem('examforge_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+
+      toast({
+        title: 'Plan Updated',
+        description: `Your subscription has been upgraded to ${plan === 'premium' ? 'Premium' : 'Basic'} plan!`,
+      });
+    } catch (error) {
+      console.error('Error updating plan:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update subscription plan',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider 
       value={{ 
@@ -184,13 +236,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isAuthenticated: !!user, 
         login, 
         logout, 
-        signup 
+        signup,
+        updateUserPlan
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
-
-// Fix missing function
-import { appendToCSV } from '@/lib/csv-utils';

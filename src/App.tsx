@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { useEffect } from "react";
 import { initializeDefaultData } from "@/lib/csv-utils";
 
 // Import pages
@@ -30,12 +29,16 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => {
-  // Initialize default data on app load
-  useEffect(() => {
-    initializeDefaultData().catch(console.error);
-  }, []);
+// Initialization function that doesn't use hooks
+const initializeApp = () => {
+  // Initialize default data
+  initializeDefaultData().catch(console.error);
+};
 
+// Call the initialization function outside of component
+initializeApp();
+
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

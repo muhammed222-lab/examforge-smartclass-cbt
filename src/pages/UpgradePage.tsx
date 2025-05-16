@@ -27,7 +27,9 @@ const UpgradePage: React.FC = () => {
     
     return () => {
       // Cleanup script
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
@@ -49,9 +51,9 @@ const UpgradePage: React.FC = () => {
       user.email,
       user.name,
       planName,
-      () => {
+      async () => {
         // On successful payment
-        updateUserPlan(plan);
+        await updateUserPlan(plan as 'basic' | 'premium');
         toast({
           title: 'Success',
           description: `Your account has been upgraded to the ${planName} plan!`,
