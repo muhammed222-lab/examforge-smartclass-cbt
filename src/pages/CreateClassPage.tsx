@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
@@ -18,6 +19,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { appendToCSV, CSVFileType } from "@/lib/csv-utils";
 import { toast } from "@/hooks/use-toast";
+import FileUpload from "@/components/FileUpload";
 
 const CreateClassPage: React.FC = () => {
   const { user } = useAuth();
@@ -29,11 +31,22 @@ const CreateClassPage: React.FC = () => {
   const [questionsCount, setQuestionsCount] = useState("10");
   const [accessKey, setAccessKey] = useState(generateAccessKey());
   const [expiryDate, setExpiryDate] = useState("");
+  const [learningMaterial, setLearningMaterial] = useState("");
+  const [materialFilename, setMaterialFilename] = useState("");
 
   function generateAccessKey() {
     // Generate a random 6-character alphanumeric string
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   }
+
+  const handleFileProcessed = (content: string, filename: string) => {
+    setLearningMaterial(content);
+    setMaterialFilename(filename);
+    toast({
+      title: "File uploaded",
+      description: `${filename} has been processed successfully`,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +72,8 @@ const CreateClassPage: React.FC = () => {
         questionsCount,
         accessKey,
         expiryDate: expiryDate || null,
+        learningMaterial: learningMaterial ? materialFilename : null,
+        learningMaterialContent: learningMaterial || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -85,9 +100,9 @@ const CreateClassPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 px-4 sm:px-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Create New Class
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -185,29 +200,24 @@ const CreateClassPage: React.FC = () => {
 
               <div>
                 <Label>Learning Materials (Optional)</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <p className="mt-2 text-sm font-medium">
-                    Drag and drop files or click to upload
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Supported formats: PDF, DOCX, PPTX, JPG, PNG
-                  </p>
-                  <Button variant="outline" className="mt-4" type="button">
-                    Upload Files
-                  </Button>
+                <div className="mt-2">
+                  <FileUpload
+                    onFileProcessed={handleFileProcessed}
+                    allowedTypes={['.pdf', '.docx', '.pptx', '.jpg', '.png', '.txt', '.csv']}
+                  />
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-col sm:flex-row justify-between gap-4">
               <Button
                 variant="outline"
                 onClick={() => navigate("/dashboard/classes")}
                 type="button"
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                 {isSubmitting ? "Creating..." : "Create Class"}
               </Button>
             </CardFooter>

@@ -36,7 +36,11 @@ const Login: React.FC = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error(error);
-      // Error toast is shown by auth context
+      toast({
+        title: "Error",
+        description: "Invalid email or password",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -49,7 +53,7 @@ const Login: React.FC = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">Log in to ExamForge</CardTitle>
             <CardDescription>
-              Enter your email and password to access your account
+              Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -69,7 +73,7 @@ const Login: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                   <Link 
-                    to="/forgot-password"
+                    to="/forgot-password" 
                     className="text-sm text-primary hover:underline"
                   >
                     Forgot password?
@@ -94,10 +98,10 @@ const Login: React.FC = () => {
                 {isSubmitting ? (
                   <div className="flex items-center">
                     <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Logging in...
+                    Signing in...
                   </div>
                 ) : (
-                  'Log in'
+                  'Sign in'
                 )}
               </Button>
               <div className="mt-4 text-center text-sm">

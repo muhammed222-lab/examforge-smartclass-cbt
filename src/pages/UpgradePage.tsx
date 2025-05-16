@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,24 +13,51 @@ import {
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { initiateFlutterwavePayment } from '@/services/payment';
 
 const UpgradePage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUserPlan } = useAuth();
+
+  useEffect(() => {
+    // Add Flutterwave script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.flutterwave.com/v3.js';
+    script.async = true;
+    document.body.appendChild(script);
+    
+    return () => {
+      // Cleanup script
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleUpgrade = (plan: string) => {
-    // Here you would integrate with Flutterwave payment
-    toast({
-      title: 'Payment process',
-      description: 'Redirecting to payment gateway...',
-    });
-
-    // Mock payment process for now
-    setTimeout(() => {
+    if (!user) {
       toast({
-        title: 'Success',
-        description: 'Your account has been upgraded successfully!',
+        title: 'Error',
+        description: 'You need to be logged in to upgrade',
+        variant: 'destructive',
       });
-    }, 2000);
+      return;
+    }
+    
+    const amount = plan === 'basic' ? 30000 : 50000;
+    const planName = plan === 'basic' ? 'Basic' : 'Premium';
+    
+    initiateFlutterwavePayment(
+      amount,
+      user.email,
+      user.name,
+      planName,
+      () => {
+        // On successful payment
+        updateUserPlan(plan);
+        toast({
+          title: 'Success',
+          description: `Your account has been upgraded to the ${planName} plan!`,
+        });
+      }
+    );
   };
 
   return (
@@ -82,10 +109,10 @@ const UpgradePage: React.FC = () => {
               ) : (
                 <Button 
                   className="w-full" 
-                  variant="outline"
+                  variant={user?.paymentPlan === 'premium' ? "outline" : "default"}
                   onClick={() => handleUpgrade('basic')}
                 >
-                  Downgrade to Basic
+                  {user?.paymentPlan === 'premium' ? 'Downgrade to Basic' : 'Choose Basic Plan'}
                 </Button>
               )}
             </CardFooter>
