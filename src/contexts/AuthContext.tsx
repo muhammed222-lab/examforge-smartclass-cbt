@@ -199,7 +199,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         updatedAt: updatedTimestamp
       };
 
-      // Update the user in CSV using updateInCSV instead of updateCSV
+      // Update the user in CSV using updateInCSV
       await updateInCSV(
         user.id,
         {

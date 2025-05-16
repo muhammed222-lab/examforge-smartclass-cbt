@@ -19,6 +19,20 @@ interface PaymentConfig {
   };
 }
 
+// Transaction object to store payment records
+export interface Transaction {
+  id: string;
+  userId: string;
+  userEmail: string;
+  planName: string;
+  amount: number;
+  currency: string;
+  txRef: string;
+  flwRef: string | null;
+  status: 'pending' | 'completed' | 'failed';
+  createdAt: string;
+}
+
 // Flutterwave payment function
 export const initiateFlutterwavePayment = async (
   amount: number,
@@ -75,6 +89,27 @@ export const initiateFlutterwavePayment = async (
             title: "Payment Successful",
             description: `Your payment of ₦${amount.toLocaleString()} has been processed.`,
           });
+          
+          // Save transaction record
+          const transaction: Transaction = {
+            id: `transaction_${Date.now()}`,
+            userId: 'user_id', // This should be replaced with actual user ID
+            userEmail: customerEmail,
+            planName: planName,
+            amount: amount,
+            currency: "NGN",
+            txRef: txRef,
+            flwRef: response.flw_ref || response.transaction_id,
+            status: 'completed',
+            createdAt: new Date().toISOString()
+          };
+          
+          // Save transaction to localStorage for history
+          const transactions = JSON.parse(localStorage.getItem('examforge_transactions') || '[]');
+          transactions.push(transaction);
+          localStorage.setItem('examforge_transactions', JSON.stringify(transactions));
+          
+          // Update user plan immediately
           onSuccess();
         } else {
           toast({
@@ -97,4 +132,10 @@ export const initiateFlutterwavePayment = async (
       variant: "destructive",
     });
   }
+};
+
+// Function to get payment history for a user
+export const getPaymentHistory = (userEmail: string): Transaction[] => {
+  const transactions = JSON.parse(localStorage.getItem('examforge_transactions') || '[]');
+  return transactions.filter((transaction: Transaction) => transaction.userEmail === userEmail);
 };
