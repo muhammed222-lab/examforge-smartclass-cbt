@@ -14,9 +14,7 @@ import {
   CardHeader, 
   CardTitle
 } from '@/components/ui/card';
-import {
-  FormLabel,
-} from '@/components/ui/form';
+import { Label } from '@/components/ui/label'; // Changed from FormLabel to Label
 import {
   RadioGroup,
   RadioGroupItem
@@ -364,7 +362,7 @@ const AddQuestionPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <FormLabel htmlFor="question">Question Text *</FormLabel>
+                    <Label htmlFor="question">Question Text *</Label>
                     <Textarea
                       id="question"
                       value={questionText}
@@ -377,7 +375,7 @@ const AddQuestionPage: React.FC = () => {
                   
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <FormLabel>Answer Options *</FormLabel>
+                      <Label>Answer Options *</Label>
                       <Button 
                         type="button" 
                         variant="outline" 
@@ -455,7 +453,7 @@ const AddQuestionPage: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <FormLabel>Upload Learning Material</FormLabel>
+                  <Label>Upload Learning Material</Label>
                   <div className="mt-2">
                     <FileUpload
                       onFileProcessed={handleFileProcessed}
@@ -466,7 +464,7 @@ const AddQuestionPage: React.FC = () => {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <FormLabel htmlFor="questionType">Question Type</FormLabel>
+                    <Label htmlFor="questionType">Question Type</Label>
                     <Select value={questionType} onValueChange={setQuestionType}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select question type" />
@@ -479,7 +477,7 @@ const AddQuestionPage: React.FC = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <FormLabel htmlFor="questionsCount">Number of Questions</FormLabel>
+                    <Label htmlFor="questionsCount">Number of Questions</Label>
                     <Input
                       id="questionsCount"
                       type="number"

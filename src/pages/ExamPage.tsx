@@ -83,9 +83,13 @@ const ExamPage: React.FC = () => {
       
       // Get class details
       const classes = await getFromCSV<ClassData>(CSVFileType.CLASSES);
+      console.log('Classes fetched:', classes);
+      console.log('Looking for classId:', classId);
+      
       const currentClass = classes.find(c => c.id === classId);
       
       if (!currentClass) {
+        console.error('Class not found:', classId);
         toast({
           title: "Error",
           description: "Exam not found",
@@ -100,6 +104,7 @@ const ExamPage: React.FC = () => {
       
       // Get questions for this class
       const classQuestions = await getFromCSV<QuestionData>(CSVFileType.QUESTIONS, classId);
+      console.log('Questions fetched:', classQuestions.length);
       
       if (classQuestions.length === 0) {
         toast({
@@ -367,85 +372,116 @@ const ExamPage: React.FC = () => {
 
   if (examStarted) {
     const currentQuestion = questions[currentQuestionIndex];
-    const options = currentQuestion?.options?.split('|') || [];
-    const selectedAnswer = answers[currentQuestion?.id] || '';
-    
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white shadow-md rounded-lg mb-4 p-4 sticky top-0 z-10 flex items-center justify-between">
-            <div className="font-bold">
-              {classData.name}
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500">Question {currentQuestionIndex + 1} of {questions.length}</div>
-              <div className="font-bold text-red-500">{formatTime(timeLeft)}</div>
-            </div>
-          </div>
-          
-          <Card className="mb-4">
-            <CardContent className="pt-6">
-              <div className="mb-6">
-                <h3 className="text-lg font-medium">Question {currentQuestionIndex + 1}</h3>
-                <p className="mt-2">{currentQuestion?.question}</p>
+    try {
+      // Parse options - improved error handling
+      const options = currentQuestion && currentQuestion.options ? 
+        (currentQuestion.options.includes('|') ? 
+          currentQuestion.options.split('|') : 
+          JSON.parse(currentQuestion.options).map((o: any) => o.text)) : 
+        [];
+      
+      const selectedAnswer = answers[currentQuestion?.id] || '';
+      
+      return (
+        <div className="min-h-screen bg-gray-50 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white shadow-md rounded-lg mb-4 p-4 sticky top-0 z-10 flex items-center justify-between">
+              <div className="font-bold">
+                {classData.name}
               </div>
-              
-              <div className="space-y-2">
-                {options.map((option, index) => (
-                  <div
-                    key={index}
-                    onClick={() => handleAnswerSelection(currentQuestion.id, option)}
-                    className={`border rounded-md p-3 cursor-pointer ${
-                      selectedAnswer === option ? 'border-primary bg-primary/10' : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div className={`h-5 w-5 rounded-full border ${
-                        selectedAnswer === option ? 'bg-primary border-primary' : 'border-gray-300'
-                      } mr-2`}></div>
-                      <span>{option}</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-right">
+                <div className="text-sm text-gray-500">Question {currentQuestionIndex + 1} of {questions.length}</div>
+                <div className="font-bold text-red-500">{formatTime(timeLeft)}</div>
               </div>
-            </CardContent>
-          </Card>
-          
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={prevQuestion}
-              disabled={currentQuestionIndex === 0}
-            >
-              Previous
-            </Button>
+            </div>
             
-            {currentQuestionIndex < questions.length - 1 ? (
-              <Button onClick={nextQuestion}>Next</Button>
-            ) : (
-              <Button onClick={submitExam} className="bg-green-600 hover:bg-green-700">
-                Submit Exam
-              </Button>
-            )}
-          </div>
-          
-          <div className="mt-6 grid grid-cols-6 md:grid-cols-10 gap-2">
-            {questions.map((_, index) => (
+            <Card className="mb-4">
+              <CardContent className="pt-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium">Question {currentQuestionIndex + 1}</h3>
+                  <p className="mt-2">{currentQuestion?.question}</p>
+                </div>
+                
+                <div className="space-y-2">
+                  {options.map((option, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleAnswerSelection(currentQuestion.id, option)}
+                      className={`border rounded-md p-3 cursor-pointer ${
+                        selectedAnswer === option ? 'border-primary bg-primary/10' : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <div className={`h-5 w-5 rounded-full border ${
+                          selectedAnswer === option ? 'bg-primary border-primary' : 'border-gray-300'
+                        } mr-2`}></div>
+                        <span>{option}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="flex justify-between">
               <Button
-                key={index}
-                variant={answers[questions[index].id] ? "default" : "outline"}
-                className={`h-10 w-10 rounded-full ${
-                  currentQuestionIndex === index ? 'ring-2 ring-offset-2 ring-primary' : ''
-                }`}
-                onClick={() => setCurrentQuestionIndex(index)}
+                variant="outline"
+                onClick={prevQuestion}
+                disabled={currentQuestionIndex === 0}
               >
-                {index + 1}
+                Previous
               </Button>
-            ))}
+              
+              {currentQuestionIndex < questions.length - 1 ? (
+                <Button onClick={nextQuestion}>Next</Button>
+              ) : (
+                <Button onClick={submitExam} className="bg-green-600 hover:bg-green-700">
+                  Submit Exam
+                </Button>
+              )}
+            </div>
+            
+            <div className="mt-6 grid grid-cols-6 md:grid-cols-10 gap-2">
+              {questions.map((_, index) => (
+                <Button
+                  key={index}
+                  variant={answers[questions[index].id] ? "default" : "outline"}
+                  className={`h-10 w-10 rounded-full ${
+                    currentQuestionIndex === index ? 'ring-2 ring-offset-2 ring-primary' : ''
+                  }`}
+                  onClick={() => setCurrentQuestionIndex(index)}
+                >
+                  {index + 1}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    } catch (error) {
+      console.error('Error rendering exam:', error);
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Card className="w-full max-w-lg mx-auto">
+            <CardHeader>
+              <CardTitle className="text-center">Error Loading Question</CardTitle>
+              <CardDescription className="text-center">There was a problem displaying this question.</CardDescription>
+            </CardHeader>
+            <CardFooter className="flex justify-center gap-2">
+              <Button variant="outline" onClick={prevQuestion} disabled={currentQuestionIndex === 0}>
+                Previous Question
+              </Button>
+              <Button onClick={nextQuestion} disabled={currentQuestionIndex >= questions.length - 1}>
+                Next Question
+              </Button>
+              <Button variant="destructive" onClick={submitExam}>
+                Submit Exam
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      );
+    }
   }
 
   return null;
