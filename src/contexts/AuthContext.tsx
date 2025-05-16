@@ -200,11 +200,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       };
 
       // Update the user in CSV using updateInCSV
-      await updateInCSV(
+      await updateInCSV<{ id: string } & Record<string, any>>(
         user.id,
         {
           paymentPlan: plan,
-          examsRemaining: examsRemaining,
+          examsRemaining: String(examsRemaining),
           updatedAt: updatedTimestamp
         },
         CSVFileType.USERS

@@ -26,6 +26,8 @@ import AddQuestionPage from "./pages/AddQuestionPage";
 import EditClassPage from "./pages/EditClassPage";
 import UpgradePage from "./pages/UpgradePage";
 import NotFound from "./pages/NotFound";
+import ExamPage from "./pages/ExamPage";
+import ExamResultPage from "./pages/ExamResultPage";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,10 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                
+                {/* Exam routes */}
+                <Route path="/exam/:classId" element={<ExamPage />} />
+                <Route path="/exam-result/:resultId" element={<ExamResultPage />} />
                 
                 {/* Protected routes */}
                 <Route path="/dashboard" element={<Dashboard />} />
