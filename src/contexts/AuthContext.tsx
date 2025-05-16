@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getFromCSV, CSVFileType, appendToCSV, updateCSV } from '@/lib/csv-utils';
+import { getFromCSV, CSVFileType, appendToCSV, updateInCSV } from '@/lib/csv-utils';
 import { useToast } from '@/hooks/use-toast';
 
 // User types
@@ -177,7 +176,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Add the updateUserPlan function
+  // Update the updateUserPlan function to use updateInCSV instead of updateCSV
   const updateUserPlan = async (plan: 'basic' | 'premium') => {
     if (!user) {
       toast({
@@ -190,20 +189,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     setIsLoading(true);
     try {
-      const updatedUser = {
+      const examsRemaining = plan === 'premium' ? 'unlimited' : 5;
+      const updatedTimestamp = new Date().toISOString();
+      
+      const updatedUser: User = {
         ...user,
         paymentPlan: plan,
-        examsRemaining: plan === 'premium' ? 'unlimited' : 5,
-        updatedAt: new Date().toISOString()
+        examsRemaining: examsRemaining,
+        updatedAt: updatedTimestamp
       };
 
-      // Update the user in CSV
-      await updateCSV(
-        { id: user.id },
+      // Update the user in CSV using updateInCSV instead of updateCSV
+      await updateInCSV(
+        user.id,
         {
           paymentPlan: plan,
-          examsRemaining: plan === 'premium' ? 'unlimited' : '5',
-          updatedAt: new Date().toISOString()
+          examsRemaining: examsRemaining,
+          updatedAt: updatedTimestamp
         },
         CSVFileType.USERS
       );
