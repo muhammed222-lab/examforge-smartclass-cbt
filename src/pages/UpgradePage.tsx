@@ -24,25 +24,44 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const plans = [
   {
-    id: 'basic',
-    name: 'Basic Plan',
-    price: 30000,
-    description: 'Perfect for individuals and small classes',
+    id: 'free',
+    name: 'Free Plan',
+    price: 0,
+    billingCycle: 'forever',
+    description: 'Get started with basic features',
     features: [
-      'Up to 5 CBTs daily',
+      'Up to 5 exams daily',
       'Basic question generation',
       'Standard result analytics',
-      'PDF and DOCX support',
+      'PDF exam export',
       'Email support',
+    ],
+  },
+  {
+    id: 'basic',
+    name: 'Basic Plan',
+    price: 5,
+    billingCycle: 'month',
+    yearlyPrice: 50,
+    description: 'Perfect for individuals and small classes',
+    features: [
+      'Up to 20 exams daily',
+      'Enhanced question generation',
+      'Detailed result analytics',
+      'PDF and DOCX support',
+      'Priority email support',
+      'Student performance tracking',
     ],
   },
   {
     id: 'premium',
     name: 'Premium Plan',
-    price: 50000,
+    price: 10,
+    billingCycle: 'month',
+    yearlyPrice: 100,
     description: 'For professionals and institutions',
     features: [
-      'Unlimited CBTs',
+      'Unlimited exams',
       'Advanced AI question generation',
       'Advanced analytics and insights',
       'Support for all document types',
@@ -54,7 +73,9 @@ const plans = [
   {
     id: 'enterprise',
     name: 'Enterprise Plan',
-    price: 100000,
+    price: 25,
+    billingCycle: 'month',
+    yearlyPrice: 250,
     description: 'For large institutions with custom needs',
     features: [
       'Everything in Premium',
@@ -73,6 +94,7 @@ const UpgradePage: React.FC = () => {
   const { user, updateUserPlan } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeTab, setActiveTab] = useState('plans');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -107,25 +129,24 @@ const UpgradePage: React.FC = () => {
     }
     
     const selectedPlan = plans.find(plan => plan.id === planId);
-    if (!selectedPlan) return;
+    if (!selectedPlan || selectedPlan.id === 'free') return;
+    
+    // Calculate the price based on billing cycle
+    const price = billingCycle === 'yearly' 
+      ? selectedPlan.yearlyPrice || selectedPlan.price * 10 
+      : selectedPlan.price;
+      
+    // Convert USD to NGN for Flutterwave (using approximate conversion rate)
+    const ngnAmount = price * 1500; // Approximate USD to NGN conversion
     
     initiateFlutterwavePayment(
-      selectedPlan.price,
+      ngnAmount,
       user.email,
       user.name,
-      selectedPlan.name,
+      `${selectedPlan.name} (${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'})`,
       async () => {
         // On successful payment
-        if (planId === 'basic' || planId === 'premium') {
-          await updateUserPlan(planId);
-        } else if (planId === 'enterprise') {
-          // For enterprise, default to premium features but mark as enterprise
-          await updateUserPlan('premium');
-          toast({
-            title: 'Enterprise Plan Activated',
-            description: 'Our team will contact you shortly to set up your custom features.',
-          });
-        }
+        await updateUserPlan(planId as 'free' | 'basic' | 'premium');
         
         // Refresh transaction history
         if (user?.email) {
@@ -134,6 +155,26 @@ const UpgradePage: React.FC = () => {
         }
       }
     );
+  };
+
+  const getButtonLabel = (planId: string) => {
+    if (planId === 'free') {
+      return 'Current Free Plan';
+    }
+    
+    if (user?.paymentPlan === planId) {
+      return 'Your Current Plan';
+    }
+    
+    if (user?.paymentPlan === 'premium' && (planId === 'basic' || planId === 'free')) {
+      return `Downgrade to ${planId === 'basic' ? 'Basic' : 'Free'}`;
+    }
+    
+    if (user?.paymentPlan === 'basic' && planId === 'free') {
+      return 'Downgrade to Free';
+    }
+    
+    return `Upgrade to ${planId.charAt(0).toUpperCase() + planId.slice(1)}`;
   };
 
   return (
@@ -153,13 +194,46 @@ const UpgradePage: React.FC = () => {
           </TabsList>
           
           <TabsContent value="plans" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="flex justify-end mb-4">
+              <div className="bg-muted inline-flex rounded-lg p-1">
+                <button
+                  className={`px-3 py-1 rounded-md transition-colors ${
+                    billingCycle === 'monthly' ? 'bg-background shadow-sm' : ''
+                  }`}
+                  onClick={() => setBillingCycle('monthly')}
+                >
+                  Monthly
+                </button>
+                <button
+                  className={`px-3 py-1 rounded-md transition-colors ${
+                    billingCycle === 'yearly' ? 'bg-background shadow-sm' : ''
+                  }`}
+                  onClick={() => setBillingCycle('yearly')}
+                >
+                  Yearly (Save 15%)
+                </button>
+              </div>
+            </div>
+          
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {plans.map(plan => (
-                <Card key={plan.id} className={user?.paymentPlan === plan.id ? 'border-primary' : ''}>
+                <Card 
+                  key={plan.id} 
+                  className={user?.paymentPlan === plan.id ? 'border-primary' : ''}
+                >
                   <CardHeader>
                     <CardTitle className="flex justify-between items-start">
                       <span>{plan.name}</span>
-                      <span className="text-xl">₦{plan.price.toLocaleString()}/year</span>
+                      {plan.price > 0 ? (
+                        <div className="text-right">
+                          <span className="text-xl">${plan.price}</span>
+                          <span className="text-xs text-muted-foreground block">
+                            {billingCycle === 'yearly' ? '/year' : '/month'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xl">Free</span>
+                      )}
                     </CardTitle>
                     <CardDescription>{plan.description}</CardDescription>
                   </CardHeader>
@@ -172,19 +246,23 @@ const UpgradePage: React.FC = () => {
                     ))}
                   </CardContent>
                   <CardFooter>
-                    {user?.paymentPlan === plan.id ? (
-                      <Button className="w-full" disabled>
-                        Your Current Plan
+                    {plan.id === 'free' ? (
+                      <Button 
+                        className="w-full" 
+                        variant={user?.paymentPlan === 'free' ? 'default' : 'outline'}
+                        disabled={user?.paymentPlan === 'free'}
+                        onClick={() => plan.id !== 'free' && handleUpgrade(plan.id)}
+                      >
+                        {getButtonLabel(plan.id)}
                       </Button>
                     ) : (
                       <Button 
                         className="w-full" 
-                        variant={user?.paymentPlan === 'premium' && plan.id === 'basic' ? "outline" : "default"}
+                        variant={user?.paymentPlan === plan.id ? 'outline' : 'default'}
+                        disabled={user?.paymentPlan === plan.id}
                         onClick={() => handleUpgrade(plan.id)}
                       >
-                        {user?.paymentPlan === 'premium' && plan.id === 'basic' 
-                          ? 'Downgrade to Basic' 
-                          : `Upgrade to ${plan.name.split(' ')[0]}`}
+                        {getButtonLabel(plan.id)}
                       </Button>
                     )}
                   </CardFooter>
@@ -199,6 +277,19 @@ const UpgradePage: React.FC = () => {
                 Contact our team to discuss your specific needs.
               </p>
               <Button variant="outline">Contact Sales</Button>
+            </div>
+            
+            <div className="bg-muted/50 p-4 rounded-lg border border-muted">
+              <h3 className="font-medium mb-2">About Payments</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                • Prices are listed in USD, but you'll pay in your local currency via Flutterwave
+              </p>
+              <p className="text-sm text-muted-foreground mb-2">
+                • The currency conversion is handled automatically during checkout
+              </p>
+              <p className="text-sm text-muted-foreground">
+                • Your subscription will activate immediately after a successful payment
+              </p>
             </div>
           </TabsContent>
           

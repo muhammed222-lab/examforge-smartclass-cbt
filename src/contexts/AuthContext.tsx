@@ -1,9 +1,11 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getFromCSV, CSVFileType, appendToCSV, updateInCSV } from '@/lib/csv-utils';
 import { useToast } from '@/hooks/use-toast';
 
 // User types
 export type UserRole = 'teacher' | 'admin';
+export type PlanType = 'free' | 'basic' | 'premium';
 
 export interface User {
   id: string;
@@ -12,7 +14,7 @@ export interface User {
   role: UserRole;
   createdAt: string;
   updatedAt: string;
-  paymentPlan: 'basic' | 'premium';
+  paymentPlan: PlanType;
   examsRemaining: number | 'unlimited';
 }
 
@@ -23,7 +25,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (email: string, password: string, name: string) => Promise<void>;
-  updateUserPlan: (plan: 'basic' | 'premium') => Promise<void>;
+  updateUserPlan: (plan: PlanType) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -70,7 +72,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         role: UserRole;
         createdAt: string;
         updatedAt: string;
-        paymentPlan: 'basic' | 'premium';
+        paymentPlan: PlanType;
         examsRemaining: string;
       }>(CSVFileType.USERS);
       
@@ -147,7 +149,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         role: 'teacher',
         createdAt: timestamp,
         updatedAt: timestamp,
-        paymentPlan: 'basic',
+        paymentPlan: 'free', // Changed from 'basic' to 'free'
         examsRemaining: 5, // Default 5 exams daily for free tier
       };
       
@@ -176,8 +178,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Update the updateUserPlan function to use updateInCSV instead of updateCSV
-  const updateUserPlan = async (plan: 'basic' | 'premium') => {
+  const updateUserPlan = async (plan: PlanType) => {
     if (!user) {
       toast({
         title: 'Error',
@@ -189,7 +190,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     setIsLoading(true);
     try {
-      const examsRemaining = plan === 'premium' ? 'unlimited' : 5;
+      const examsRemaining = plan === 'premium' ? 'unlimited' : plan === 'basic' ? 20 : 5;
       const updatedTimestamp = new Date().toISOString();
       
       const updatedUser: User = {
@@ -216,7 +217,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       toast({
         title: 'Plan Updated',
-        description: `Your subscription has been upgraded to ${plan === 'premium' ? 'Premium' : 'Basic'} plan!`,
+        description: `Your subscription has been upgraded to ${
+          plan === 'premium' ? 'Premium' : plan === 'basic' ? 'Basic' : 'Free'
+        } plan!`,
       });
     } catch (error) {
       console.error('Error updating plan:', error);

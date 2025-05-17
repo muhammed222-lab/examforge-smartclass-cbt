@@ -31,6 +31,9 @@ export interface Transaction {
   flwRef: string | null;
   status: 'pending' | 'completed' | 'failed';
   createdAt: string;
+  planDuration?: 'monthly' | 'yearly';
+  validUntil?: string;
+  usdAmount?: number;
 }
 
 // Flutterwave payment function
@@ -59,6 +62,18 @@ export const initiateFlutterwavePayment = async (
     
     // Generate a unique transaction reference
     const txRef = `EF-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+
+    // Extract USD amount from plan name - format is usually "Plan Name (Monthly/Yearly)"
+    const isPremium = planName.toLowerCase().includes('premium');
+    const isBasic = planName.toLowerCase().includes('basic');
+    const isYearly = planName.toLowerCase().includes('yearly');
+    
+    // Estimate USD amount
+    const usdAmount = isPremium 
+      ? (isYearly ? 100 : 10) 
+      : isBasic
+        ? (isYearly ? 50 : 5)
+        : 0;
     
     const config: PaymentConfig = {
       public_key: "FLWPUBK_TEST-0ddb40b442d8517b066065c814a52c40-X",
@@ -72,8 +87,8 @@ export const initiateFlutterwavePayment = async (
         name: customerName,
       },
       customizations: {
-        title: `ExamForge ${planName} Plan`,
-        description: `Payment for ${planName} Plan`,
+        title: `ExamForge ${planName}`,
+        description: `Payment for ${planName}`,
         logo: window.location.origin + "/favicon.png",
       },
     };
@@ -87,8 +102,17 @@ export const initiateFlutterwavePayment = async (
         if (response.status === "successful") {
           toast({
             title: "Payment Successful",
-            description: `Your payment of ₦${amount.toLocaleString()} has been processed.`,
+            description: `Your payment of ₦${amount.toLocaleString()} (approx $${usdAmount}) has been processed.`,
           });
+          
+          // Calculate validity period
+          const now = new Date();
+          const validUntil = new Date();
+          if (isYearly) {
+            validUntil.setFullYear(now.getFullYear() + 1);
+          } else {
+            validUntil.setMonth(now.getMonth() + 1);
+          }
           
           // Save transaction record
           const transaction: Transaction = {
@@ -101,7 +125,10 @@ export const initiateFlutterwavePayment = async (
             txRef: txRef,
             flwRef: response.flw_ref || response.transaction_id,
             status: 'completed',
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            planDuration: isYearly ? 'yearly' : 'monthly',
+            validUntil: validUntil.toISOString(),
+            usdAmount: usdAmount
           };
           
           // Save transaction to localStorage for history
@@ -111,6 +138,11 @@ export const initiateFlutterwavePayment = async (
           
           // Update user plan immediately
           onSuccess();
+          
+          toast({
+            title: "Plan Activated",
+            description: `Your ${planName} has been activated and will be valid until ${validUntil.toLocaleDateString()}.`,
+          });
         } else {
           toast({
             title: "Payment Failed",
