@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +27,7 @@ import UpgradePage from "./pages/UpgradePage";
 import NotFound from "./pages/NotFound";
 import ExamPage from "./pages/ExamPage";
 import ExamResultPage from "./pages/ExamResultPage";
+import AdminCSVPage from './pages/AdminCSVPage';
 
 const queryClient = new QueryClient();
 
@@ -72,6 +72,9 @@ const App = () => {
                 <Route path="/dashboard/upgrade" element={<UpgradePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                
+                {/* Admin CSV page */}
+                <Route path="/admin/csv" element={<AdminCSVPage />} />
                 
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />

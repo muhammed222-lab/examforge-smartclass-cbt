@@ -14,6 +14,7 @@ import {
   User,
   Menu,
   X,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -39,9 +40,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
   
-  // Add admin link if user is admin
+  // Add admin links if user is admin
   if (user?.role === 'admin') {
-    navItems.push({ name: 'Admin Panel', path: '/admin', icon: User });
+    navItems.push(
+      { name: 'Admin Panel', path: '/admin', icon: User },
+      { name: 'CSV Database', path: '/admin/csv', icon: FileSpreadsheet }
+    );
   }
 
   const SidebarContent = () => (
@@ -51,10 +55,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <p className="text-sm text-muted-foreground">{user?.email}</p>
         <div className="mt-2">
           <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
-            {user?.paymentPlan === 'premium' ? 'Premium Plan' : 'Basic Plan'}
+            {user?.paymentPlan === 'premium' ? 'Premium Plan' : user?.paymentPlan === 'basic' ? 'Basic Plan' : 'Free Plan'}
           </span>
         </div>
-        {user?.paymentPlan === 'basic' && (
+        {user?.paymentPlan !== 'premium' && (
           <div className="mt-2 text-xs text-muted-foreground">
             Remaining exams today: {user?.examsRemaining}
           </div>

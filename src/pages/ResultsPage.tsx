@@ -285,7 +285,7 @@ const ResultsPage: React.FC = () => {
           new Date(result.createdAt).toLocaleDateString()
         ];
         
-        // Escape commas in values and wrap in quotes if needed
+        // Fixed: Properly escape double quotes in values
         const formattedRow = row.map(value => {
           if (value.includes(',') || value.includes('"')) {
             return `"${value.replace(/"/g, '""')}"`;
