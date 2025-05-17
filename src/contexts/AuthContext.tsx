@@ -1,11 +1,11 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getFromCSV, CSVFileType, appendToCSV, updateInCSV } from '@/lib/csv-utils';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '../hooks/use-toast';
 
 // User types
 export type UserRole = 'teacher' | 'admin';
-export type PlanType = 'free' | 'basic' | 'premium';
+export type PlanType = 'free' | 'basic' | 'premium' | 'enterprise';
 
 export interface User {
   id: string;
@@ -16,6 +16,7 @@ export interface User {
   updatedAt: string;
   paymentPlan: PlanType;
   examsRemaining: number | 'unlimited';
+  planExpiryDate?: string;
 }
 
 interface AuthContextType {
@@ -45,7 +46,6 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { toast } = useToast();
 
   // Check for existing session on mount
   useEffect(() => {
@@ -74,6 +74,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         updatedAt: string;
         paymentPlan: PlanType;
         examsRemaining: string;
+        planExpiryDate?: string;
       }>(CSVFileType.USERS);
       
       const foundUser = users.find(u => u.email === email && u.password === password);
@@ -149,8 +150,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         role: 'teacher',
         createdAt: timestamp,
         updatedAt: timestamp,
-        paymentPlan: 'free', // Changed from 'basic' to 'free'
-        examsRemaining: 5, // Default 5 exams daily for free tier
+        paymentPlan: 'free', // Free plan by default
+        examsRemaining: 5, // Default 5 exams for free tier
       };
       
       // Store in users CSV (with password)
@@ -190,14 +191,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     setIsLoading(true);
     try {
-      const examsRemaining = plan === 'premium' ? 'unlimited' : plan === 'basic' ? 20 : 5;
+      // Set exams remaining based on the plan
+      const examsRemaining = plan === 'premium' || plan === 'enterprise' 
+        ? 'unlimited' 
+        : plan === 'basic' ? 20 : 5;
+      
+      // Calculate expiry date - 1 month from now for monthly subscriptions
+      const now = new Date();
+      const expiryDate = new Date();
+      expiryDate.setMonth(now.getMonth() + 1); // Set to 1 month from now by default
+      const expiryDateString = expiryDate.toISOString();
+      
       const updatedTimestamp = new Date().toISOString();
       
       const updatedUser: User = {
         ...user,
         paymentPlan: plan,
         examsRemaining: examsRemaining,
-        updatedAt: updatedTimestamp
+        updatedAt: updatedTimestamp,
+        planExpiryDate: expiryDateString
       };
 
       // Update the user in CSV using updateInCSV
@@ -206,7 +218,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         {
           paymentPlan: plan,
           examsRemaining: String(examsRemaining),
-          updatedAt: updatedTimestamp
+          updatedAt: updatedTimestamp,
+          planExpiryDate: expiryDateString
         },
         CSVFileType.USERS
       );
@@ -218,7 +231,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast({
         title: 'Plan Updated',
         description: `Your subscription has been upgraded to ${
-          plan === 'premium' ? 'Premium' : plan === 'basic' ? 'Basic' : 'Free'
+          plan === 'premium' ? 'Premium' : plan === 'basic' ? 'Basic' : plan === 'enterprise' ? 'Enterprise' : 'Free'
         } plan!`,
       });
     } catch (error) {

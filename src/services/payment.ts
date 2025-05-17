@@ -66,14 +66,18 @@ export const initiateFlutterwavePayment = async (
     // Extract USD amount from plan name - format is usually "Plan Name (Monthly/Yearly)"
     const isPremium = planName.toLowerCase().includes('premium');
     const isBasic = planName.toLowerCase().includes('basic');
+    const isEnterprise = planName.toLowerCase().includes('enterprise');
     const isYearly = planName.toLowerCase().includes('yearly');
     
     // Estimate USD amount
-    const usdAmount = isPremium 
-      ? (isYearly ? 100 : 10) 
-      : isBasic
-        ? (isYearly ? 50 : 5)
-        : 0;
+    let usdAmount = 0;
+    if (isPremium) {
+      usdAmount = isYearly ? 100 : 10;
+    } else if (isBasic) {
+      usdAmount = isYearly ? 50 : 5;
+    } else if (isEnterprise) {
+      usdAmount = isYearly ? 250 : 25;
+    }
     
     const config: PaymentConfig = {
       public_key: "FLWPUBK_TEST-0ddb40b442d8517b066065c814a52c40-X",
@@ -88,7 +92,7 @@ export const initiateFlutterwavePayment = async (
       },
       customizations: {
         title: `ExamForge ${planName}`,
-        description: `Payment for ${planName}`,
+        description: `Payment for ${planName} ($${usdAmount})`,
         logo: window.location.origin + "/favicon.png",
       },
     };
@@ -114,10 +118,14 @@ export const initiateFlutterwavePayment = async (
             validUntil.setMonth(now.getMonth() + 1);
           }
           
+          // Get user ID from localStorage
+          const storedUser = localStorage.getItem('examforge_user');
+          const userId = storedUser ? JSON.parse(storedUser).id : 'unknown';
+          
           // Save transaction record
           const transaction: Transaction = {
             id: `transaction_${Date.now()}`,
-            userId: 'user_id', // This should be replaced with actual user ID
+            userId: userId,
             userEmail: customerEmail,
             planName: planName,
             amount: amount,

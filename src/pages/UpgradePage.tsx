@@ -146,7 +146,7 @@ const UpgradePage: React.FC = () => {
       `${selectedPlan.name} (${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'})`,
       async () => {
         // On successful payment
-        await updateUserPlan(planId as 'free' | 'basic' | 'premium');
+        await updateUserPlan(planId as 'free' | 'basic' | 'premium' | 'enterprise');
         
         // Refresh transaction history
         if (user?.email) {
@@ -159,11 +159,11 @@ const UpgradePage: React.FC = () => {
 
   const getButtonLabel = (planId: string) => {
     if (planId === 'free') {
-      return 'Current Free Plan';
+      return 'Free Plan';
     }
     
     if (user?.paymentPlan === planId) {
-      return 'Your Current Plan';
+      return 'Current Plan';
     }
     
     if (user?.paymentPlan === 'premium' && (planId === 'basic' || planId === 'free')) {
@@ -173,8 +173,24 @@ const UpgradePage: React.FC = () => {
     if (user?.paymentPlan === 'basic' && planId === 'free') {
       return 'Downgrade to Free';
     }
+
+    if (user?.paymentPlan === 'enterprise' && (planId === 'premium' || planId === 'basic' || planId === 'free')) {
+      return `Downgrade to ${planId.charAt(0).toUpperCase() + planId.slice(1)}`;
+    }
     
     return `Upgrade to ${planId.charAt(0).toUpperCase() + planId.slice(1)}`;
+  };
+
+  // Calculate days remaining in current plan
+  const getDaysRemaining = () => {
+    if (!user?.planExpiryDate) return null;
+    
+    const expiryDate = new Date(user.planExpiryDate);
+    const today = new Date();
+    const differenceInTime = expiryDate.getTime() - today.getTime();
+    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+    
+    return differenceInDays > 0 ? differenceInDays : 0;
   };
 
   return (
@@ -186,6 +202,31 @@ const UpgradePage: React.FC = () => {
             Manage your subscription and view payment history
           </p>
         </div>
+
+        {/* Current subscription status */}
+        {user?.paymentPlan !== 'free' && user?.planExpiryDate && (
+          <Card className="bg-muted/30 border-primary">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">
+                    Current Plan: {user?.paymentPlan.charAt(0).toUpperCase() + user?.paymentPlan.slice(1)}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {getDaysRemaining() !== null
+                      ? `Your plan will expire in ${getDaysRemaining()} days (${new Date(user?.planExpiryDate).toLocaleDateString()})`
+                      : 'Your plan is active'}
+                  </p>
+                </div>
+                <div className="mt-2 sm:mt-0">
+                  <Button variant="outline" onClick={() => handleUpgrade(user?.paymentPlan)}>
+                    Renew Plan
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="plans" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full max-w-md mb-6">
@@ -246,25 +287,14 @@ const UpgradePage: React.FC = () => {
                     ))}
                   </CardContent>
                   <CardFooter>
-                    {plan.id === 'free' ? (
-                      <Button 
-                        className="w-full" 
-                        variant={user?.paymentPlan === 'free' ? 'default' : 'outline'}
-                        disabled={user?.paymentPlan === 'free'}
-                        onClick={() => plan.id !== 'free' && handleUpgrade(plan.id)}
-                      >
-                        {getButtonLabel(plan.id)}
-                      </Button>
-                    ) : (
-                      <Button 
-                        className="w-full" 
-                        variant={user?.paymentPlan === plan.id ? 'outline' : 'default'}
-                        disabled={user?.paymentPlan === plan.id}
-                        onClick={() => handleUpgrade(plan.id)}
-                      >
-                        {getButtonLabel(plan.id)}
-                      </Button>
-                    )}
+                    <Button 
+                      className="w-full" 
+                      variant={user?.paymentPlan === plan.id ? 'outline' : 'default'}
+                      disabled={user?.paymentPlan === plan.id || (plan.id === 'free' && user?.paymentPlan === 'free')}
+                      onClick={() => plan.id !== 'free' ? handleUpgrade(plan.id) : updateUserPlan('free')}
+                    >
+                      {getButtonLabel(plan.id)}
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -319,7 +349,7 @@ const UpgradePage: React.FC = () => {
                       <div key={transaction.id} className={`grid ${isMobile ? 'grid-cols-3' : 'grid-cols-5'} p-3 border-t items-center text-sm`}>
                         <div>{new Date(transaction.createdAt).toLocaleDateString()}</div>
                         <div>{transaction.planName}</div>
-                        <div className="text-right">₦{transaction.amount.toLocaleString()}</div>
+                        <div className="text-right">₦{transaction.amount.toLocaleString()} (≈${transaction.usdAmount})</div>
                         {!isMobile && (
                           <>
                             <div className="truncate max-w-[150px]" title={transaction.txRef}>{transaction.txRef}</div>
