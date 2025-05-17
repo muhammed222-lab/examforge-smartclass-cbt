@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
@@ -10,7 +11,9 @@ import {
   ChevronRight,
   Users,
   GraduationCap,
-  ClipboardList
+  ClipboardList,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -30,11 +33,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 import { toast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { getFromCSV, CSVFileType, deleteFromCSV } from '@/lib/csv-utils';
+import { getFromCSV, CSVFileType, deleteFromCSV, updateInCSV } from '@/lib/csv-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ClassDetails {
@@ -63,13 +68,28 @@ interface QuestionData {
   createdAt: string;
 }
 
+interface ExamResult {
+  id: string;
+  studentId: string;
+  classId: string;
+  score: number;
+  totalQuestions: number;
+  status: "passed" | "failed";
+  createdAt: string;
+  answers?: string;
+  timeSpent?: string;
+}
+
 const ClassDetailPage: React.FC = () => {
   const { classId } = useParams<{ classId: string }>();
   const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
   const [students, setStudents] = useState<StudentData[]>([]);
   const [questions, setQuestions] = useState<QuestionData[]>([]);
+  const [results, setResults] = useState<ExamResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [showGradesDialogOpen, setShowGradesDialogOpen] = useState(false);
+  const [showGradesToStudents, setShowGradesToStudents] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   
   const navigate = useNavigate();
@@ -110,6 +130,7 @@ const ClassDetailPage: React.FC = () => {
         }
         
         setClassDetails(foundClass);
+        setShowGradesToStudents(foundClass.showGradesToStudents !== 'false');
         
         // Fetch students in this class
         const studentsData = await getFromCSV<StudentData>(CSVFileType.STUDENTS, classId);
@@ -118,6 +139,10 @@ const ClassDetailPage: React.FC = () => {
         // Fetch questions for this class
         const questionsData = await getFromCSV<QuestionData>(CSVFileType.QUESTIONS, classId);
         setQuestions(questionsData);
+
+        // Fetch results for this class
+        const resultsData = await getFromCSV<ExamResult>(CSVFileType.RESULTS, classId);
+        setResults(resultsData);
         
       } catch (error) {
         console.error('Error fetching class data:', error);
@@ -159,6 +184,94 @@ const ClassDetailPage: React.FC = () => {
       });
     } finally {
       setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleToggleGradeVisibility = async () => {
+    if (!classId || !classDetails) return;
+    
+    try {
+      // Update class settings in CSV
+      await updateInCSV<ClassDetails>(
+        classId,
+        { showGradesToStudents: String(!showGradesToStudents) },
+        CSVFileType.CLASSES
+      );
+      
+      setShowGradesToStudents(!showGradesToStudents);
+      
+      toast({
+        title: 'Settings Updated',
+        description: `Grade visibility has been ${!showGradesToStudents ? 'enabled' : 'disabled'} for students.`,
+      });
+    } catch (error) {
+      console.error('Error updating grade visibility:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update grade visibility settings.',
+        variant: 'destructive',
+      });
+    } finally {
+      setShowGradesDialogOpen(false);
+    }
+  };
+
+  const exportResultsToCSV = () => {
+    try {
+      // Create CSV content
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      // Add headers
+      csvContent += "Student Name,Email,Matric Number,Score,Status,Time Spent,Date\n";
+      
+      // Add data rows
+      results.forEach(result => {
+        const student = students.find(s => s.id === result.studentId);
+        if (!student) return;
+        
+        const row = [
+          student.name,
+          student.email,
+          student.matricNumber || 'N/A',
+          `${result.score}%`,
+          result.status === 'passed' ? 'Passed' : 'Failed',
+          result.timeSpent || 'N/A',
+          new Date(result.createdAt).toLocaleDateString()
+        ];
+        
+        // Properly escape double quotes in values
+        const formattedRow = row.map(value => {
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        });
+        
+        csvContent += formattedRow.join(',') + "\n";
+      });
+      
+      // Create a download link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `${classDetails?.name}_Results_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      
+      // Trigger download
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: 'Export Complete',
+        description: 'Results exported to CSV successfully.',
+      });
+    } catch (error) {
+      console.error('Error exporting to CSV:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export results to CSV.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -225,6 +338,24 @@ const ClassDetailPage: React.FC = () => {
                     {new Date(classDetails.createdAt).toLocaleDateString()}
                   </p>
                 </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium">Show Grades to Students</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {showGradesToStudents 
+                        ? 'Students can see their grades after completing exams' 
+                        : 'Students cannot see their grades after completing exams'}
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowGradesDialogOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    {showGradesToStudents ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    {showGradesToStudents ? 'Visible' : 'Hidden'}
+                  </Button>
+                </div>
               </CardContent>
               <CardFooter className="flex justify-between items-center">
                 <Link to={`/dashboard/classes/${classId}/edit`}>
@@ -233,7 +364,7 @@ const ClassDetailPage: React.FC = () => {
                     Edit Class
                   </Button>
                 </Link>
-                <AlertDialog>
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive">
                       <Trash2 className="mr-2 h-4 w-4" />
@@ -255,6 +386,33 @@ const ClassDetailPage: React.FC = () => {
                 </AlertDialog>
               </CardFooter>
             </Card>
+            
+            <AlertDialog open={showGradesDialogOpen} onOpenChange={setShowGradesDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Grade Visibility Settings</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Control whether students can see their grades immediately after completing an exam.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="flex items-center justify-between py-4">
+                  <div>
+                    <h4 className="font-medium">Show grades to students</h4>
+                    <p className="text-sm text-muted-foreground">
+                      When enabled, students will see their score immediately after submitting their exam.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={showGradesToStudents}
+                    onCheckedChange={setShowGradesToStudents}
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleToggleGradeVisibility}>Save Changes</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </TabsContent>
           
           <TabsContent value="students" className="space-y-6">
@@ -338,25 +496,90 @@ const ClassDetailPage: React.FC = () => {
 
           <TabsContent value="results" className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Results</CardTitle>
-                <CardDescription>
-                  View exam results for this class
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Results</CardTitle>
+                  <CardDescription>
+                    View exam results for this class
+                  </CardDescription>
+                </div>
+                {results.length > 0 && (
+                  <Button onClick={exportResultsToCSV}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export Results (CSV)
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
-                <div className="text-center py-10">
-                  <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <h3 className="font-medium text-lg mb-1">No results available</h3>
-                  <p>Exam results for this class will appear here.</p>
-                </div>
+                {results.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Total Results</p>
+                        <p className="text-2xl font-bold">{results.length}</p>
+                      </div>
+                      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Passed</p>
+                        <p className="text-2xl font-bold">
+                          {results.filter(r => r.status === 'passed').length}
+                        </p>
+                      </div>
+                      <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Failed</p>
+                        <p className="text-2xl font-bold">
+                          {results.filter(r => r.status === 'failed').length}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-4">Student</th>
+                            <th className="text-left py-3 px-4">Matric Number</th>
+                            <th className="text-left py-3 px-4">Score</th>
+                            <th className="text-left py-3 px-4">Status</th>
+                            <th className="text-left py-3 px-4">Time Spent</th>
+                            <th className="text-left py-3 px-4">Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {results.map(result => {
+                            const student = students.find(s => s.id === result.studentId);
+                            return (
+                              <tr key={result.id} className="border-b">
+                                <td className="py-3 px-4">{student?.name || 'Unknown Student'}</td>
+                                <td className="py-3 px-4">{student?.matricNumber || 'N/A'}</td>
+                                <td className="py-3 px-4">{result.score}%</td>
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    result.status === 'passed' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {result.status === 'passed' ? 'Passed' : 'Failed'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">{result.timeSpent || 'N/A'}</td>
+                                <td className="py-3 px-4">
+                                  {new Date(result.createdAt).toLocaleDateString()}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-10">
+                    <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <h3 className="font-medium text-lg mb-1">No results available</h3>
+                    <p>Exam results for this class will appear here.</p>
+                  </div>
+                )}
               </CardContent>
-              <CardFooter>
-                <Button disabled>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Results
-                </Button>
-              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
