@@ -461,7 +461,7 @@ const ResultsPage: React.FC = () => {
                   <p className="text-xl font-bold text-red-600 dark:text-red-400">
                     {getResultsByScore().belowHalf}
                   </p>
-                  <p className="text-xs text-muted-foreground">Failed (<50%)</p>
+                  <p className="text-xs text-muted-foreground">Failed (&lt;50%)</p>
                 </div>
               </div>
             </CardContent>
