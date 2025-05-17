@@ -48,6 +48,11 @@ export async function getFromCSV<T>(type: CSVFileType, id?: string): Promise<T[]
       console.warn(`Warning parsing ${type} CSV data:`, results.errors);
     }
     
+    // Add debugging info for class access
+    if (type === CSVFileType.CLASSES) {
+      console.log(`Fetched classes data, count: ${results.data?.length || 0}`);
+    }
+    
     return Promise.resolve(results.data || []);
   } catch (error) {
     console.error(`Error fetching ${type} CSV data:`, error);

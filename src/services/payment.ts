@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 
 interface PaymentConfig {
@@ -79,7 +78,10 @@ export const initiateFlutterwavePayment = async (
       usdAmount = isYearly ? 250 : 25;
     }
     
-    const config: PaymentConfig = {
+    // Debug log
+    console.log("Payment initiated for plan:", planName, "USD amount:", usdAmount);
+    
+    const config = {
       public_key: "FLWPUBK_TEST-0ddb40b442d8517b066065c814a52c40-X",
       tx_ref: txRef,
       amount: amount,
@@ -97,73 +99,84 @@ export const initiateFlutterwavePayment = async (
       },
     };
     
-    const handleFlutterwavePayment = (window as any).FlutterwaveCheckout;
+    // Create new instance of FlutterwaveCheckout
+    const handleFlutterwavePayment = (window as any).FlutterwaveCheckout(config);
     
-    handleFlutterwavePayment({
-      ...config,
-      callback: (response: any) => {
-        console.log(response);
-        if (response.status === "successful") {
-          toast({
-            title: "Payment Successful",
-            description: `Your payment of ₦${amount.toLocaleString()} (approx $${usdAmount}) has been processed.`,
-          });
-          
-          // Calculate validity period
-          const now = new Date();
-          const validUntil = new Date();
-          if (isYearly) {
-            validUntil.setFullYear(now.getFullYear() + 1);
-          } else {
-            validUntil.setMonth(now.getMonth() + 1);
-          }
-          
-          // Get user ID from localStorage
-          const storedUser = localStorage.getItem('examforge_user');
-          const userId = storedUser ? JSON.parse(storedUser).id : 'unknown';
-          
-          // Save transaction record
-          const transaction: Transaction = {
-            id: `transaction_${Date.now()}`,
-            userId: userId,
-            userEmail: customerEmail,
-            planName: planName,
-            amount: amount,
-            currency: "NGN",
-            txRef: txRef,
-            flwRef: response.flw_ref || response.transaction_id,
-            status: 'completed',
-            createdAt: new Date().toISOString(),
-            planDuration: isYearly ? 'yearly' : 'monthly',
-            validUntil: validUntil.toISOString(),
-            usdAmount: usdAmount
-          };
-          
-          // Save transaction to localStorage for history
-          const transactions = JSON.parse(localStorage.getItem('examforge_transactions') || '[]');
-          transactions.push(transaction);
-          localStorage.setItem('examforge_transactions', JSON.stringify(transactions));
-          
-          // Update user plan immediately
-          onSuccess();
-          
-          toast({
-            title: "Plan Activated",
-            description: `Your ${planName} has been activated and will be valid until ${validUntil.toLocaleDateString()}.`,
-          });
+    // Add callback and close events
+    handleFlutterwavePayment.callback = (response: any) => {
+      console.log("Payment response:", response);
+      if (response.status === "successful") {
+        toast({
+          title: "Payment Successful",
+          description: `Your payment of ₦${amount.toLocaleString()} (approx $${usdAmount}) has been processed.`,
+        });
+        
+        // Calculate validity period
+        const now = new Date();
+        const validUntil = new Date();
+        if (isYearly) {
+          validUntil.setFullYear(now.getFullYear() + 1);
         } else {
-          toast({
-            title: "Payment Failed",
-            description: "Please try again or contact support.",
-            variant: "destructive",
-          });
+          validUntil.setMonth(now.getMonth() + 1);
         }
-        handleFlutterwavePayment.close();
-      },
-      onclose: () => {
-        // Payment modal closed
-      },
-    });
+        
+        // Get user ID from localStorage
+        const storedUser = localStorage.getItem('examforge_user');
+        const userId = storedUser ? JSON.parse(storedUser).id : 'unknown';
+        
+        // Save transaction record
+        const transaction = {
+          id: `transaction_${Date.now()}`,
+          userId: userId,
+          userEmail: customerEmail,
+          planName: planName,
+          amount: amount,
+          currency: "NGN",
+          txRef: txRef,
+          flwRef: response.flw_ref || response.transaction_id,
+          status: 'completed',
+          createdAt: new Date().toISOString(),
+          planDuration: isYearly ? 'yearly' : 'monthly',
+          validUntil: validUntil.toISOString(),
+          usdAmount: usdAmount
+        };
+        
+        // Save transaction to localStorage for history
+        const transactions = JSON.parse(localStorage.getItem('examforge_transactions') || '[]');
+        transactions.push(transaction);
+        localStorage.setItem('examforge_transactions', JSON.stringify(transactions));
+        
+        // Get plan type from plan name
+        let planType: 'free' | 'basic' | 'premium' | 'enterprise' = 'free';
+        if (isPremium) planType = 'premium';
+        else if (isBasic) planType = 'basic';
+        else if (isEnterprise) planType = 'enterprise';
+        
+        // Debug log before callback
+        console.log("About to execute onSuccess callback with plan:", planType);
+        
+        // Update user plan immediately
+        onSuccess();
+        
+        toast({
+          title: "Plan Activated",
+          description: `Your ${planName} has been activated and will be valid until ${validUntil.toLocaleDateString()}.`,
+        });
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: "Please try again or contact support.",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    handleFlutterwavePayment.onclose = () => {
+      console.log("Payment modal closed");
+    };
+    
+    // Manual open not needed as the constructor automatically opens the modal
+    
   } catch (error) {
     console.error("Payment error:", error);
     toast({

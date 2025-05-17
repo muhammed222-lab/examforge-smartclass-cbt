@@ -129,8 +129,18 @@ const UpgradePage: React.FC = () => {
     }
     
     const selectedPlan = plans.find(plan => plan.id === planId);
-    if (!selectedPlan || selectedPlan.id === 'free') return;
-    
+    if (!selectedPlan || selectedPlan.id === 'free') {
+      if (selectedPlan?.id === 'free') {
+        // If switching to free plan, directly update it without payment
+        updateUserPlan('free');
+        toast({
+          title: 'Plan Updated',
+          description: 'Your plan has been downgraded to Free.',
+        });
+      }
+      return;
+    }
+      
     // Calculate the price based on billing cycle
     const price = billingCycle === 'yearly' 
       ? selectedPlan.yearlyPrice || selectedPlan.price * 10 
@@ -139,6 +149,9 @@ const UpgradePage: React.FC = () => {
     // Convert USD to NGN for Flutterwave (using approximate conversion rate)
     const ngnAmount = price * 1500; // Approximate USD to NGN conversion
     
+    // Debug log
+    console.log(`Initiating payment for ${selectedPlan.name}, USD: $${price}, NGN: ₦${ngnAmount}`);
+    
     initiateFlutterwavePayment(
       ngnAmount,
       user.email,
@@ -146,6 +159,7 @@ const UpgradePage: React.FC = () => {
       `${selectedPlan.name} (${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'})`,
       async () => {
         // On successful payment
+        console.log(`Payment successful, updating user plan to: ${planId}`);
         await updateUserPlan(planId as 'free' | 'basic' | 'premium' | 'enterprise');
         
         // Refresh transaction history
